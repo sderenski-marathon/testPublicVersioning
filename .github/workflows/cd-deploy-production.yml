@@ -1,0 +1,110 @@
+name: Deploy To Production
+
+permissions:
+  id-token: write
+  contents: write
+  actions: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_type:
+        description: "Select Deployment Option"
+        required: true
+        type: choice
+        options:
+          - "Latest Staging Tag"
+          - "Specify Staging Tag"
+      release_version:
+        description: "Enter git tag name in the format of: v1.0.0-staging"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get Release Tag
+        id: get-tag
+        run: |
+          if [ "${{ inputs.deployment_type }}" == "Latest Staging Tag" ]; then
+            TAG=$(git tag --sort=-version:refname | grep -E "v[0-9]+\.[0-9]+\.[0-9]+-staging$" | head -n 1)
+
+            if [ -z "$TAG" ]; then
+              echo "Error: No staging tags found"
+              exit 1
+            fi
+          else 
+            TAG="${{ inputs.release_version }}"
+
+            if [ -z "$TAG" ]; then
+              echo "Error: Release version must be provided"
+              exit 1
+            fi
+          fi
+
+          if [[ ! "$TAG" =~ -staging$ ]]; then
+            echo "Error: Tag must end with '-staging'"
+            exit 1
+          fi
+
+          # Extract Base Version
+          BASE_VERSION=${TAG%-staging}
+
+          echo "Using staging tag: $TAG"
+          echo "Base version: $BASE_VERSION"
+          echo "staging_tag=$TAG" >> $GITHUB_OUTPUT
+          echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Checkout Tag
+        run: |
+          git checkout ${{ steps.get-tag.outputs.staging_tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+
+      - name: Build Application
+        id: build
+        run: |
+          npm run build
+
+      - name: Create Production Tag
+        id: prod-tag
+        run: |
+          PROD_TAG="${{ steps.get-tag.outputs.base_version }}-prod"
+
+          git tag ${PROD_TAG} ${{ steps.get-tag.outputs.staging_tag }}
+          git push origin ${PROD_TAG}
+
+          git tag -f prod
+          git push origin prod --force
+
+          echo "prod_tag=${PROD_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Create Build Archive
+        run: |
+          zip -r build-${{ steps.prod-tag.outputs.prod_tag }}.zip dist/
+
+      - name: Create Production Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create ${{ steps.prod-tag.outputs.prod_tag }} \
+            --repo ${{ github.repository }} \
+            --title "Production Release ${{ steps.get-tag.outputs.base_version }}" \
+            --notes "Promoted from staging: ${{ steps.get-tag.outputs.staging_tag }}" \
+            --prerelease=false \
+            build-${{ steps.prod-tag.outputs.prod_tag }}.zip

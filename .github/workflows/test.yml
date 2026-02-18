@@ -1,0 +1,94 @@
+name: test
+permissions:
+  id-token: write
+  contents: write
+  actions: write
+
+on:
+  workflow_call:
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["20.x", "22.x"]
+    name: typecheck-${{ matrix.node-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          environment-version: ${{ matrix.node-version }}
+
+      - name: Run Type Check
+        run: npm run type
+
+  prettier:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["20.x", "22.x"]
+    name: prettier-${{ matrix.node-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          environment-version: ${{ matrix.node-version }}
+
+      - name: Run Prettier Check
+        run: npm run prettier
+
+  lint-base:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["20.x", "22.x"]
+    name: lint-base-${{ matrix.node-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          environment-version: ${{ matrix.node-version }}
+
+      - name: Run Lint Check
+        run: npm run lint
+
+  style-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["20.x", "22.x"]
+    name: style-lint-${{ matrix.node-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          environment-version: ${{ matrix.node-version }}
+
+      - name: Run Stylelint Check
+        run: npm run stylelint
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["20.x", "22.x"]
+    name: unit-tests-${{ matrix.node-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          environment-version: ${{ matrix.node-version }}
+
+      - name: Run Unit Tests Check
+        run: npm run test

@@ -1,0 +1,21 @@
+name: QA Orchestration
+
+on:
+  pull_request:
+
+permissions:
+  id-token: write
+  contents: write
+  actions: write
+  pull-requests: write
+
+jobs:
+  ci:
+    uses: "./.github/workflows/test.yml"
+    secrets: inherit
+  build_qa:
+    needs: [ci]
+    uses: "./.github/workflows/qa-build-and-release.yml"
+    with:
+      pr_number: ${{ github.event.number }}
+    secrets: inherit
