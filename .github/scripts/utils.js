@@ -1,3 +1,5 @@
+import fs from "fs";
+
 /**
  * Compares versions version to limit to see if version is less than the limit.
  * Has a checkEqualsTo variable to allow for a less than or equals to check.

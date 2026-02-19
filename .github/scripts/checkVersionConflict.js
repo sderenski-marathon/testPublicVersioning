@@ -1,12 +1,12 @@
-import { compareVersions, setOutput } from "./utils";
+import { compareVersions, setOutput } from "./utils.js";
 
 const ancestorVersion = process.argv[2];
 const mainVersion = process.argv[3];
 const currentPrVersion = process.argv[4];
 
-const ancestorParts = ancestorVersion.split(".");
-const mainParts = mainVersion.split(".");
-const currentParts = currentPrVersion.split(".");
+const ancestorParts = ancestorVersion.split(".").map(Number);
+const mainParts = mainVersion.split(".").map(Number);
+const currentParts = currentPrVersion.split(".").map(Number);
 
 let conflict;
 

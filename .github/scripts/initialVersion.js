@@ -1,5 +1,5 @@
 // used to make the inital version bump
-import { determineBumpType } from "./utils";
+import { determineBumpType } from "./utils.js";
 import { execSync } from "child_process";
 import fs from "fs";
 
