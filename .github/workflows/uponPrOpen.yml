@@ -26,4 +26,9 @@ jobs:
         run: |
           echo ${{ github.event.action }}
           BRANCH_NAME="${{ github.head_ref }}"
-          node .github/scripts/initialVersion.js "$BRANCH_NAME"
+
+          ANCESTOR=$(git merge-base origin/main HEAD)
+
+          ANCESTOR_VERSION=$(git show $ANCESTOR:package.json | node -e "console.log(JSON.parse(require('fs').readFileSync(0, 'utf-8')).version)")
+
+          node .github/scripts/initialVersion.js "$BRANCH_NAME" "$ANCESTOR_VERSION"
