@@ -7,7 +7,7 @@ const branchName = process.argv[2];
 const ancestorVersion = process.argv[3];
 
 // Check the current version before bumping.
-if (checkCurrentVersion(ancestorVersion)) {
+if (!checkCurrentVersion(ancestorVersion)) {
   process.exit(0);
 }
 
@@ -40,5 +40,5 @@ function checkCurrentVersion(ancestorVersion) {
   const packageJson = JSON.parse(fs.readFileSync("./package.json", "utf-8"));
   const packageVersion = packageJson.version;
 
-  return !ancestorVersion === packageVersion;
+  return ancestorVersion === packageVersion;
 }
