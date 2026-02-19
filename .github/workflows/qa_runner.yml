@@ -1,4 +1,4 @@
-name: QA Runner
+name: QA-Runner
 
 on:
   pull_request:
