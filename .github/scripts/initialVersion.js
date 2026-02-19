@@ -1,17 +1,20 @@
 // used to make the inital version bump
+import { determineBumpType } from "./utils";
 import { execSync } from "child_process";
 import fs from "fs";
 
 const branchName = process.argv[2];
+const ancestorVersion = process.argv[3];
 
-let bump;
-if (branchName.startsWith("feat!/")) {
-  bump = "major";
-} else if (branchName.startsWith("feat/")) {
-  bump = "minor";
-} else if (branchName.startsWith("fix/") || branchName.startsWith("hotfix/")) {
-  bump = "patch";
-} else {
+// Check the current version before bumping.
+if (checkCurrentVersion(ancestorVersion)) {
+  process.exit(0);
+}
+
+// Determine the bump type
+const bump = determineBumpType(branchName);
+
+if (bump === null) {
   console.log("Branch name does not match any known pattern, skipping bump");
   process.exit(0);
 }
@@ -32,3 +35,10 @@ const newVersion = packageJson.version;
 
 execSync(`git commit -m "chore: resolve version to ${newVersion}"`);
 execSync(`git push origin HEAD:${branchName}`);
+
+function checkCurrentVersion(ancestorVersion) {
+  const packageJson = JSON.parse(fs.readFileSync("./package.json", "utf-8"));
+  const packageVersion = packageJson.version;
+
+  return !ancestorVersion === packageVersion;
+}

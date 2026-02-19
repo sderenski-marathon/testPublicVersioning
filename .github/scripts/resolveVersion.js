@@ -1,3 +1,4 @@
+import { determineBumpType } from "./utils";
 import { execSync } from "child_process";
 import fs from "fs";
 
@@ -10,14 +11,9 @@ pkg.version = mainVersion;
 fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
 
 // Determine the bump type
-let bump;
-if (branchName.startsWith("feat!/")) {
-  bump = "major";
-} else if (branchName.startsWith("feat/")) {
-  bump = "minor";
-} else if (branchName.startsWith("fix/") || branchName.startsWith("hotfix/")) {
-  bump = "patch";
-} else {
+const bump = determineBumpType(branchName);
+
+if (bump === null) {
   console.log("Branch name does not match any known pattern, skipping bump");
   process.exit(0);
 }
@@ -40,4 +36,4 @@ const newVersion = packageJson.version;
 execSync(
   `git diff --staged --quiet || git commit -m "chore: resolve version to ${newVersion}"`,
 );
-execSync(`git push origin ${branchName}`);
+execSync(`git push origin HEAD:${branchName}`);
