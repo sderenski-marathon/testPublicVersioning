@@ -1,3 +1,5 @@
+import { fs } from "fs";
+
 const ancestorVersion = process.argv[2];
 const mainVersion = process.argv[3];
 const currentPrVersion = process.argv[4];
