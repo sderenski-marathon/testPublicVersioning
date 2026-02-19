@@ -1,0 +1,28 @@
+name: Update Node Version
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  update-version:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: update version
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          node .github/scripts/resolveVersion.js "$BRANCH_NAME"

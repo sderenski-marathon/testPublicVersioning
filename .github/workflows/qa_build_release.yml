@@ -1,11 +1,5 @@
 name: QA Build and Release
 
-permissions:
-  id-token: write
-  contents: write
-  actions: read
-  pull-requests: write
-
 on:
   workflow_call:
     inputs:
@@ -37,6 +31,4 @@ jobs:
         run: npm ci
 
       - name: Build Application
-        id: build
-        run: |
-          npm run build
+        run: npm run build
