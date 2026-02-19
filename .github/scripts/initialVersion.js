@@ -31,4 +31,4 @@ const packageJson = JSON.parse(fs.readFileSync("./package.json", "utf-8"));
 const newVersion = packageJson.version;
 
 execSync(`git commit -m "chore: resolve version to ${newVersion}"`);
-execSync(`git push origin ${branchName}`);
+execSync(`git push origin HEAD:${branchName}`);
