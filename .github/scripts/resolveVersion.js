@@ -34,7 +34,10 @@ execSync(
   "git add package.json package-lock.json 2>/dev/null || git add package.json",
 );
 
+const packageJson = JSON.parse(readFileSync("./package.json", "utf-8"));
+const newVersion = packageJson.version;
+
 execSync(
-  `git diff --staged --quiet || git commit -m "chore: resolve version to $(node -p \"require('./package.json').version\")"`,
+  `git diff --staged --quiet || git commit -m "chore: resolve version to ${newVersion}"`,
 );
 execSync("git push origin ${{ github.head_ref }}");
