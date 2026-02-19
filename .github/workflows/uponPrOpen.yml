@@ -4,9 +4,11 @@ on:
   pull_request:
     types: [opened]
 
+# How do I check that this hasn't reran twice now though
+# Is there a check to make sure that
 jobs:
   update-version:
-    if: github.actor != 'github-actions[bot]'
+    if: github.actor != 'github-actions[bot]' && github.event.action != 'reopened'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -24,5 +26,6 @@ jobs:
           cache: "npm"
       - name: update version
         run: |
+          echo ${{ github.event.action }}
           BRANCH_NAME="${{ github.head_ref }}"
           node .github/scripts/initialVersion.js "$BRANCH_NAME"
