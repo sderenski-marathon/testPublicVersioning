@@ -8,18 +8,14 @@ const ancestorParts = ancestorVersion.split(".").map(Number);
 const mainParts = mainVersion.split(".").map(Number);
 const currentParts = currentPrVersion.split(".").map(Number);
 
-let conflict;
-console.log(ancestorParts, mainParts, currentParts);
-
 const ancestorCompare = compareVersions(ancestorParts, mainParts, false);
 const prCompare = compareVersions(currentParts, mainParts, true);
 
-if (ancestorCompare && prCompare) {
-  setOutput(conflict, true);
-  //conflict = true;
-} else {
-  setOutput(conflict, false);
-  //conflict = false;
-}
+const equalEachOther =
+  ancestorVersion === mainVersion && currentPrVersion === mainVersion;
 
-console.log(`conflict result ${conflict}`);
+if ((ancestorCompare && prCompare) || equalEachOther) {
+  setOutput("conflict", "true");
+} else {
+  setOutput("conflict", "false");
+}

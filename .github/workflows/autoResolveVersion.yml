@@ -44,6 +44,7 @@ jobs:
 
           # Check if both sides changed the version since the ancestor
           node .github/scripts/checkVersionConflict.js "$ANCESTOR_VERSION" "$MAIN_VERSION" "$PR_VERSION"
+          echo "Conflict output from check step: ${{ steps.check.outputs.conflict }}"
 
       - name: Resolve version and commit
         if: steps.check.outputs.conflict == 'true'
