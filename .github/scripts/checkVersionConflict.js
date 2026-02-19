@@ -14,7 +14,10 @@ console.log(ancestorParts, mainParts, currentParts);
 const ancestorCompare = compareVersions(ancestorParts, mainParts, false);
 const prCompare = compareVersions(currentParts, mainParts, true);
 
-if (ancestorCompare && prCompare) {
+const equalEachOther =
+  ancestorVersion === mainVersion && currentPrVersion === mainVersion;
+
+if ((ancestorCompare && prCompare) || equalEachOther) {
   setOutput(conflict, true);
   //conflict = true;
 } else {
