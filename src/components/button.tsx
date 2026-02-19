@@ -1,4 +1,9 @@
+import { useState } from "react"
+
 // HEllooooo
+// world
 export function Button() {
-  return <button>Hellooooo</button>
+  const [value, setValue] = useState(false);
+
+  return <button onClick={() => setValue(!value)}>Hellooooo</button>
 }

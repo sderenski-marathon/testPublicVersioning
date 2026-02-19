@@ -1,4 +1,4 @@
-name: CI - Tests
+name: CI-Tests
 permissions:
   id-token: write
   contents: write

@@ -1,4 +1,4 @@
-name: Staging Runner
+name: Staging-Runner
 
 on:
   push:
