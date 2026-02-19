@@ -27,7 +27,7 @@ function App() {
         </p>
       </div>
       <p className="read-the-docs">
-        Why should I click the logos?
+        Movies are great
       </p>
     </>
   )
