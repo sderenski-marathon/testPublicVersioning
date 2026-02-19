@@ -24,5 +24,6 @@ jobs:
           cache: "npm"
       - name: update version
         run: |
+          echo ${{ github.event.action }}
           BRANCH_NAME="${{ github.head_ref }}"
           node .github/scripts/initialVersion.js "$BRANCH_NAME"
