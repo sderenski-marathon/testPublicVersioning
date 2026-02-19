@@ -25,4 +25,4 @@ jobs:
       - name: update version
         run: |
           BRANCH_NAME="${{ github.head_ref }}"
-          node .github/scripts/resolveVersion.js "$BRANCH_NAME"
+          node .github/scripts/initialVersion.js "$BRANCH_NAME"
