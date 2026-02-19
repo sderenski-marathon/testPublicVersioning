@@ -4,11 +4,9 @@ on:
   pull_request:
     types: [opened]
 
-# How do I check that this hasn't reran twice now though
-# Is there a check to make sure that
 jobs:
   update-version:
-    if: github.actor != 'github-actions[bot]' && github.event.action != 'reopened'
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: write
