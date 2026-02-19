@@ -8,6 +8,7 @@ const ancestorVersion = process.argv[3];
 
 // Check the current version before bumping.
 if (!checkCurrentVersion(ancestorVersion)) {
+  console.log("Skipping initial Version");
   process.exit(0);
 }
 
@@ -40,5 +41,8 @@ function checkCurrentVersion(ancestorVersion) {
   const packageJson = JSON.parse(fs.readFileSync("./package.json", "utf-8"));
   const packageVersion = packageJson.version;
 
+  console.log(
+    `ancestorVersion: ${ancestorVersion}  packageVersion: ${packageVersion}`,
+  );
   return ancestorVersion === packageVersion;
 }
