@@ -9,7 +9,7 @@ if (branchName.startsWith("feat!/")) {
   bump = "major";
 } else if (branchName.startsWith("feat/")) {
   bump = "minor";
-} else if (branch.startsWith("fix/") || branch.startsWith("hotfix/")) {
+} else if (branchName.startsWith("fix/") || branchName.startsWith("hotfix/")) {
   bump = "patch";
 } else {
   console.log("Branch name does not match any known pattern, skipping bump");
