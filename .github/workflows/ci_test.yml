@@ -1,0 +1,43 @@
+name: CI - Tests
+permissions:
+  id-token: write
+  contents: write
+  actions: write
+
+on:
+  workflow_call:
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    name: typecheck
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+      - name: Install Dependencies
+        run: npm ci
+        shell: bash
+
+      - name: Run Type Check
+        run: npm run typecheck
+
+  lint-check:
+    runs-on: ubuntu-latest
+    name: typecheck
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+      - name: Install Dependencies
+        run: npm ci
+        shell: bash
+
+      - name: Run Type Check
+        run: npm run lint
