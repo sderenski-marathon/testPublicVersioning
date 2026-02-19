@@ -30,7 +30,5 @@ execSync(
 const packageJson = JSON.parse(fs.readFileSync("./package.json", "utf-8"));
 const newVersion = packageJson.version;
 
-execSync(
-  `git diff --staged --quiet || git commit -m "chore: resolve version to ${newVersion}"`,
-);
-execSync("git push origin ${{ github.head_ref }}");
+execSync(`git commit -m "chore: resolve version to ${newVersion}"`);
+execSync(`git push origin ${branchName}`);
