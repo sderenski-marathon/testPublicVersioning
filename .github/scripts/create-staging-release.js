@@ -11,6 +11,12 @@ function exec(command) {
   execSync(command, { encoding: "utf-8", stdio: "inherit" });
 }
 
+// Create GitHub release
+const ghToken = process.env.GH_TOKEN;
+if (!ghToken) {
+  throw new Error("GH_TOKEN environment variable is required");
+}
+
 // Get bump type from environment (set by previous step)
 const bumpType = process.env.BUMP_TYPE;
 
@@ -52,12 +58,6 @@ exec(`git push origin ${stagingTag}`);
 
 // Create build archive
 exec(`zip -r build-${stagingTag}.zip dist/`);
-
-// Create GitHub release
-const ghToken = process.env.GH_TOKEN;
-if (!ghToken) {
-  throw new Error("GH_TOKEN environment variable is required");
-}
 
 const repo = process.env.GITHUB_REPOSITORY;
 exec(`gh release create ${stagingTag} \
