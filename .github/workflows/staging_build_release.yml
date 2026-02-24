@@ -1,7 +1,18 @@
 name: Staging Build and Release
 
+permissions:
+  id-token: write
+  contents: write
+  actions: read
+  pull-requests: write
+
 on:
   workflow_call:
+    inputs:
+      commitMessages:
+        description: "Commit Message"
+        required: false
+        type: string
 
 jobs:
   build:
@@ -27,3 +38,29 @@ jobs:
 
       - name: Build Application
         run: npm run build
+
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_SECRET_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+
+      - name: Determine Version Bump
+        id: version-bump
+        run: node .github/scripts/version-bump.js
+
+      - name: Create Staging Tag and Release
+        run: node .github/scripts/create-staging-release.js
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          BUMP_TYPE: ${{ steps.version-bump.outputs.bump }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
