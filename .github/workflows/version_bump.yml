@@ -1,0 +1,29 @@
+name: Bump Project Version
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_SECRET_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+
+      - name: Commit and push directly to protected branch
+        run: |
+          git config user.name "your-bot-app[bot]"
+          git config user.email "your-bot-app[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: automated commit"
+          git push

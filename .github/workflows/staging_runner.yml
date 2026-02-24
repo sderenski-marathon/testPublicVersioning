@@ -18,3 +18,5 @@ jobs:
     needs: [ci]
     uses: "./.github/workflows/staging_build_release.yml"
     secrets: inherit
+    with:
+      commitMessages: ${{ github.event.head_commit.message }}
