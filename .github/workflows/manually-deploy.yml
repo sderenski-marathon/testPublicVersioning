@@ -118,7 +118,7 @@ jobs:
       - name: Create Build Archive
         if: steps.get-tag.outputs.rollback == 'false'
         run: |
-          zip -r build-${{ steps.prod-tag.outputs.prod_tag }}.zip apps/member/build
+          zip -r build-${{ steps.prod-tag.outputs.prod_tag }}.zip ./dist
 
       - name: Create Production Release
         if: steps.get-tag.outputs.rollback == 'false'
