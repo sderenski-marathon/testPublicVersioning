@@ -80,7 +80,7 @@ jobs:
             ROLLBACK=false
           fi
 
-          BASE_VERSION=${TAG%-(staging|prod|hotfix)}
+          BASE_VERSION=${TAG%-*}
 
           echo "version_tag=$TAG" >> $GITHUB_OUTPUT
           echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
