@@ -74,7 +74,7 @@ jobs:
           fi
 
           SUFFIX=${TAG##*-}
-          if ["$SUFFIX" = "prod"]; then 
+          if [[ "$SUFFIX" = "prod" ]]; then 
             ROLLBACK=true
           else 
             ROLLBACK=false
