@@ -115,6 +115,8 @@ jobs:
           git tag -f prod
           git push origin prod --force
 
+          echo "prod_tag=${PROD_TAG}" >> $GITHUB_OUTPUT
+
       - name: Create Build Archive
         if: steps.get-tag.outputs.rollback == 'false'
         run: |
