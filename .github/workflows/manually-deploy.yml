@@ -54,6 +54,7 @@ jobs:
         run: |
           if [ "${{ inputs.deployment_type }}" == "Latest Staging Tag" ]; then
             TAG=$(git tag --sort=-version:refname | grep -E "v[0-9]+\.[0-9]+\.[0-9]+-staging$" | head -n 1)
+            ROLLBACK=false
 
             if [ -z "$TAG" ]; then
               echo "Error: No staging tags found"
