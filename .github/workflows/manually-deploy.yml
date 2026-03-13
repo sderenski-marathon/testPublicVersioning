@@ -82,6 +82,8 @@ jobs:
 
 
           BASE_VERSION=${TAG%-*}
+          echo $ROLLBACK
+          echo ${{inputs.env}}
 
           echo "version_tag=$TAG" >> $GITHUB_OUTPUT
           echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
