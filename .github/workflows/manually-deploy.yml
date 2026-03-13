@@ -68,7 +68,7 @@ jobs:
             fi
 
             SUFFIX=${TAG##*-}
-            if [[ "$SUFFIX" = "prod" || ( "$SUFFIX" = "staging" && "${{inputs.env}}"" = "staging" ) ]]; then 
+            if [[ "$SUFFIX" = "prod" || ( "$SUFFIX" = "staging" && "${{inputs.env}}" = "staging" ) ]]; then 
               ROLLBACK=true
             else 
               ROLLBACK=false
