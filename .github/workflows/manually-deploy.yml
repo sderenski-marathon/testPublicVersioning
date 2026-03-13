@@ -3,7 +3,6 @@ name: Manually Deploy
 permissions:
   id-token: write
   contents: write
-  actions: write
 
 on:
   workflow_dispatch:
@@ -14,143 +13,194 @@ on:
         type: string
         default: "main"
       env:
-        description: "Select what env to deploy to"
+        description: "Select environment to deploy to"
         required: true
         type: choice
         options:
-          - "staging"
-          - "prod"
-        default: "prod"
+          - staging
+          - prod
+        default: prod
       deployment_type:
         description: "Select Deployment Option"
         required: true
         type: choice
         options:
-          - "Latest Staging Tag"
-          - "Specify Tag"
+          - Latest Staging Tag
+          - Specify Tag
       release_version:
-        description: "Enter git tag name in the format of: v1.0.0-{staging, hotfix, prod}"
+        description: "Enter git tag (format: v1.0.0-{staging|hotfix|prod})"
         required: false
         type: string
         default: ""
 
-# Steps:
-# Need check out the tag specified in the inputs
-# Build the application from that git tag
-# Generate a new tag for that release
-# Deploy that tag and artifact
+env:
+  NODE_VERSION: "20"
+  TAG_SUFFIX_PATTERN: "(prod|staging|hotfix)"
 
 jobs:
-  build:
+  determine-tag:
     runs-on: ubuntu-latest
+    outputs:
+      version_tag: ${{ steps.resolve-tag.outputs.version_tag }}
+      base_version: ${{ steps.resolve-tag.outputs.base_version }}
+      is_rollback: ${{ steps.resolve-tag.outputs.is_rollback }}
     steps:
-      - name: Check out
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Pull Tag
-        id: get-tag
+      - name: Resolve Tag
+        id: resolve-tag
         run: |
+          set -e
+
           if [ "${{ inputs.deployment_type }}" == "Latest Staging Tag" ]; then
             TAG=$(git tag --sort=-version:refname | grep -E "v[0-9]+\.[0-9]+\.[0-9]+-staging$" | head -n 1)
-            ROLLBACK=false
-
+            
             if [ -z "$TAG" ]; then
-              echo "Error: No staging tags found"
+              echo "::error::No staging tags found"
               exit 1
             fi
+            
+            IS_ROLLBACK=false
           else
             TAG="${{ inputs.release_version }}"
-
+            
             if [ -z "$TAG" ]; then
-              echo "Error: Release version must be provided"
+              echo "::error::Release version must be provided when 'Specify Tag' is selected"
               exit 1
             fi
-
+            
+            # Verify tag exists
+            if ! git rev-parse "$TAG" >/dev/null 2>&1; then
+              echo "::error::Tag '$TAG' does not exist"
+              exit 1
+            fi
+            
+            # Determine if this is a rollback
             SUFFIX=${TAG##*-}
-            if [[ "$SUFFIX" = "prod" || ( "$SUFFIX" = "staging" && "${{inputs.env}}" = "staging" ) ]]; then 
-              ROLLBACK=true
-            else 
-              ROLLBACK=false
+            if [ "$SUFFIX" = "prod" ] || [ "$SUFFIX" = "staging" -a "${{ inputs.env }}" = "staging" ]; then
+              IS_ROLLBACK=true
+            else
+              IS_ROLLBACK=false
             fi
           fi
 
-          if [[ ! "$TAG" =~ -(prod|staging|hotfix)$ ]]; then
-            echo "Error: Tag must end with '-staging', '-prod', or '-hotfix'"
+          # Validate tag format
+          if [[ ! "$TAG" =~ -${{ env.TAG_SUFFIX_PATTERN }}$ ]]; then
+            echo "::error::Tag must end with '-staging', '-prod', or '-hotfix'"
             exit 1
           fi
 
-
           BASE_VERSION=${TAG%-*}
-          echo $ROLLBACK
-          echo ${{inputs.env}}
 
           echo "version_tag=$TAG" >> $GITHUB_OUTPUT
           echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
-          echo "rollback=$ROLLBACK" >> $GITHUB_OUTPUT
+          echo "is_rollback=$IS_ROLLBACK" >> $GITHUB_OUTPUT
+
+          echo "::notice::Resolved tag: $TAG (base: $BASE_VERSION, rollback: $IS_ROLLBACK)"
+
+  build-and-deploy:
+    needs: determine-tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Checkout Tag
-        run: git checkout ${{ steps.get-tag.outputs.version_tag }}
+        run: git checkout ${{ needs.determine-tag.outputs.version_tag }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
       - name: Install Dependencies
-        run: |
-          npm ci
+        run: npm ci
 
       - name: Build Application
-        id: build
         run: npm run build
 
-      - name: Create Production Tag
-        id: prod-tag
-        if: steps.get-tag.outputs.rollback == 'false' && inputs.env == 'prod'
-        run: |
-          PROD_TAG="${{ steps.get-tag.outputs.base_version }}-prod"
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ needs.determine-tag.outputs.version_tag }}
+          path: dist/
+          retention-days: 90
 
-          git tag ${PROD_TAG} ${{ steps.get-tag.outputs.version_tag }}
-          git push origin ${PROD_TAG}
+  deploy-prod:
+    needs: [determine-tag, build-and-deploy]
+    if: inputs.env == 'prod'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-          git tag -f prod
-          git push origin prod --force
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ needs.determine-tag.outputs.version_tag }}
+          path: dist/
 
-          echo "prod_tag=${PROD_TAG}" >> $GITHUB_OUTPUT
-
-      - name: Create Build Archive
-        if: steps.get-tag.outputs.rollback == 'false' && inputs.env == 'prod'
-        run: |
-          zip -r build-${{ steps.prod-tag.outputs.prod_tag }}.zip ./dist
-
-      - name: Create Production Release
-        if: steps.get-tag.outputs.rollback == 'false' && inputs.env == 'prod'
+      - name: Deploy New Production Release
+        if: needs.determine-tag.outputs.is_rollback == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create ${{ steps.prod-tag.outputs.prod_tag }} \
-            --repo ${{ github.repository }} \
-            --title "Production Release ${{ steps.get-tag.outputs.base_version }}" \
-            --notes "Promoted from staging: ${{ steps.get-tag.outputs.version_tag }}" \
-            --prerelease=false \
-            build-${{ steps.prod-tag.outputs.prod_tag }}.zip
+          set -e
 
-      - name: Deploy Rollback
-        if: steps.get-tag.outputs.rollback == 'true' && inputs.env == 'prod'
-        run: |
-          git tag -f prod
+          PROD_TAG="${{ needs.determine-tag.outputs.base_version }}-prod"
+
+          # Create and push production tag
+          git tag "$PROD_TAG" ${{ needs.determine-tag.outputs.version_tag }}
+          git push origin "$PROD_TAG"
+
+          # Update floating prod tag
+          git tag -f prod "$PROD_TAG"
           git push origin prod --force
 
-          echo "Deployed rollback ${{steps.get-tag.outputs.version_tag}}"
+          # Create build archive
+          zip -r "build-${PROD_TAG}.zip" ./dist
 
-      - name: Create Staging Rollback
-        id: staging-tag
-        if: steps.get-tag.outputs.rollback == 'true' && inputs.env == 'staging'
+          # Create GitHub release
+          gh release create "$PROD_TAG" \
+            --repo ${{ github.repository }} \
+            --title "Production Release ${{ needs.determine-tag.outputs.base_version }}" \
+            --notes "Promoted from staging: ${{ needs.determine-tag.outputs.version_tag }}" \
+            "build-${PROD_TAG}.zip"
+
+      - name: Deploy Production Rollback
+        if: needs.determine-tag.outputs.is_rollback == 'true'
         run: |
-          git tag -f deployed_staging
+          set -e
+
+          git tag -f prod ${{ needs.determine-tag.outputs.version_tag }}
+          git push origin prod --force
+
+          echo "::notice::Rolled back prod to ${{ needs.determine-tag.outputs.version_tag }}"
+
+  deploy-staging:
+    needs: [determine-tag, build-and-deploy]
+    if: inputs.env == 'staging'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Deploy Staging Rollback
+        if: needs.determine-tag.outputs.is_rollback == 'true'
+        run: |
+          set -e
+
+          git tag -f deployed_staging ${{ needs.determine-tag.outputs.version_tag }}
           git push origin deployed_staging --force
 
-          echo "Deployed rollback ${{steps.get-tag.outputs.version_tag}}"
+          echo "::notice::Rolled back staging to ${{ needs.determine-tag.outputs.version_tag }}"
