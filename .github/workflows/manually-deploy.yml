@@ -136,4 +136,8 @@ jobs:
 
       - name: Deploy Rollback
         if: steps.get-tag.outputs.rollback == 'true'
-        run: echo "Deployed rollback ${{steps.get-tag.outputs.version_tag}}"
+        run: |
+          git tag -f prod
+          git push origin prod --force
+
+          echo "Deployed rollback ${{steps.get-tag.outputs.version_tag}}"
