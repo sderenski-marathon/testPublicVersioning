@@ -66,6 +66,13 @@ jobs:
               echo "Error: Release version must be provided"
               exit 1
             fi
+
+            SUFFIX=${TAG##*-}
+            if [[ "$SUFFIX" = "prod" || ( "$SUFFIX" = "staging" && "${{inputs.env}}"" = "staging" ) ]]; then 
+              ROLLBACK=true
+            else 
+              ROLLBACK=false
+            fi
           fi
 
           if [[ ! "$TAG" =~ -(prod|staging|hotfix)$ ]]; then
@@ -73,12 +80,6 @@ jobs:
             exit 1
           fi
 
-          SUFFIX=${TAG##*-}
-          if [[ "$SUFFIX" = "prod" ]]; then 
-            ROLLBACK=true
-          else 
-            ROLLBACK=false
-          fi
 
           BASE_VERSION=${TAG%-*}
 
@@ -105,7 +106,7 @@ jobs:
 
       - name: Create Production Tag
         id: prod-tag
-        if: steps.get-tag.outputs.rollback == 'false'
+        if: steps.get-tag.outputs.rollback == 'false' && inputs.env == 'prod'
         run: |
           PROD_TAG="${{ steps.get-tag.outputs.base_version }}-prod"
 
@@ -118,12 +119,12 @@ jobs:
           echo "prod_tag=${PROD_TAG}" >> $GITHUB_OUTPUT
 
       - name: Create Build Archive
-        if: steps.get-tag.outputs.rollback == 'false'
+        if: steps.get-tag.outputs.rollback == 'false' && inputs.env == 'prod'
         run: |
           zip -r build-${{ steps.prod-tag.outputs.prod_tag }}.zip ./dist
 
       - name: Create Production Release
-        if: steps.get-tag.outputs.rollback == 'false'
+        if: steps.get-tag.outputs.rollback == 'false' && inputs.env == 'prod'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -135,9 +136,18 @@ jobs:
             build-${{ steps.prod-tag.outputs.prod_tag }}.zip
 
       - name: Deploy Rollback
-        if: steps.get-tag.outputs.rollback == 'true'
+        if: steps.get-tag.outputs.rollback == 'true' && inputs.env == 'prod'
         run: |
           git tag -f prod
           git push origin prod --force
+
+          echo "Deployed rollback ${{steps.get-tag.outputs.version_tag}}"
+
+      - name: Create Staging Rollback
+        id: staging-tag
+        if: steps.get-tag.outputs.rollback == 'true' && inputs.env == 'staging'
+        run: |
+          git tag -f deployed_staging
+          git push origin deployed_staging --force
 
           echo "Deployed rollback ${{steps.get-tag.outputs.version_tag}}"
