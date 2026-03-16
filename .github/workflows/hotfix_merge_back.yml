@@ -19,4 +19,37 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Identify
+      - name: Identify Source Branch
+        id: source
+        run: |
+          BRANCH=$(git branch -r --contains ${{ github.ref }} | grep 'origin/hotfix/' | head -n 1 | sed 's/.*origin\///')
+
+          TICKET_NUMBER="${BRANCH#hotfix/}"
+
+          echo "source_branch=$BRANCH" >> $GITHUB_OUTPUT
+          echo "ticket_number=$TICKET_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Create Temp Branch
+        run: |
+          git switch -c "merge-back/${{ steps.source.outputs.ticket_number }}" "${{ github.ref }}"
+
+      - name: Cherry-pick commits (Excluding version bump)
+        run: |
+          COMMITs=$(git log origin/main..${{ steps.source.outputs.source_branch }} \
+            --oneline \
+            --no-merges \
+            --invert-grep \
+            --grep="\[skip-ci\]" \
+            --format="%H" \
+            --reverse)
+
+          for commit in $COMMITS; do
+            git cherry-pick $commit || {
+              echo "Conflict detected, stopping"
+              exit 1
+            }
+          done
+
+      - name: Create PR from temp to main
+        run: |
+          gh pr create --title "Merge Hotfix into Main" --body "test" --base main --head "merge-back/${{ steps.source.outputs.ticket_number }}"
