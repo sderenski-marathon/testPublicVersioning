@@ -48,7 +48,7 @@ echo ""
 echo "Triggering hotfix workflow..."
 
 gh workflow run hotfix_initiate.yml \
-  -f prod_tag="$PROD_TAG" \
-  -f ticket_number="$TICKET"
+  -f prod-tag="$PROD_TAG" \
+  -f ticket-number="$TICKET"
 
 echo "View workflow runs: gh run list --workflow=hotfix_initiate.yml"
