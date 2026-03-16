@@ -1,0 +1,22 @@
+name: Hotfix Merge Back
+
+permissions:
+  id-token: write
+  contents: write
+  actions: read
+  pull-requests: write
+
+on:
+  push:
+    tags:
+      - "v*-hotfix"
+
+jobs:
+  merge-back:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Identify
