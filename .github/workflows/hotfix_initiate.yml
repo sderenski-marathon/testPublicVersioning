@@ -1,0 +1,67 @@
+name: Initiate Hotfix Branch
+
+permissions:
+  id-token: write
+  contents: write
+  actions: read
+  pull-requests: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      prod-tag:
+        description: "Enter git tag that is deployed to production (format: v1.0.0-prod)"
+        required: false
+        type: string
+      ticket-number:
+        description: "ticket number"
+        required: true
+        type: string
+
+jobs:
+  validate-and-create:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate Production Tag
+        run: |
+          if ! git rev-parse "${{ inputs.prod-tag }}" >/dev/null 2>&1; then
+            echo "::error::Tag '${{ inputs.prod-tag }}' does not exist"
+            exit 1
+          fi
+
+          if [[ ! "${{ inputs.prod-tag }}" =~ -prod$ ]]; then
+            echo "::error::Tag must end with '-prod'"
+            exit 1
+          fi
+
+      - name: Create Branch From ${{ inputs.prod-tag }}
+        run: |
+          git checkout -b "hotfix/${{inputs.ticket-number}}" "${{inputs.prod-tag}}"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Version Bump for hotfix
+        run: |
+          # Configure Git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          npm version patch --no-git-tag-version
+
+          VERSION=$(jq -r '.version' package.json)
+
+          # Commit changes
+          git add package.json
+          git commit -m "chore: bump version to '$VERSION' [skip ci]"
+          git push origin "hotfix/${{ inputs.ticket-number }}"
