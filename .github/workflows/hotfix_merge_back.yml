@@ -3,7 +3,7 @@ name: Hotfix Merge Back
 permissions:
   id-token: write
   contents: write
-  actions: read
+  actions: write
   pull-requests: write
 
 on:
