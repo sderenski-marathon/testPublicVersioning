@@ -73,7 +73,7 @@ jobs:
           echo "::notice::Hotfix version determined: $HOTFIX_TAG"
 
       - name: Delete Existing Release and Tag (Force Update)
-        if: inputs.force_update == true && steps.version.outputs.skip_release == 'true'
+        if: inputs.force_update == true && steps.version.outputs.skip_release == true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -89,11 +89,11 @@ jobs:
           git tag -d "$HOTFIX_TAG" || true
 
       - name: Build Application
-        if: steps.version.outputs.skip_release == 'false' || inputs.force_update == 'true'
+        if: steps.version.outputs.skip_release == 'false' || inputs.force_update == true
         run: npm run build
 
       - name: Create Hotfix Tag and Release
-        if: steps.version.outputs.skip_release == 'false' || inputs.force_update == 'true'
+        if: steps.version.outputs.skip_release == 'false' || inputs.force_update == true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
