@@ -76,7 +76,7 @@ jobs:
           echo "::notice::Hotfix version determined: $HOTFIX_TAG"
 
       - name: Delete Existing Release and Tag (Force Update)
-        if: inputs.force_update == true && steps.version.outputs.skip_release == true
+        if: inputs.force_update == true && steps.version.outputs.skip_release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -156,46 +156,63 @@ jobs:
         run: |
           TICKET_NUMBER="${{ needs.build-and-release.outputs.version }}"
           HOTFIX_BRANCH="${{ inputs.hotfix_branch }}"
+          MERGE_BRANCH="merge-back/$TICKET_NUMBER"
 
-          # Create merge-back branch from main
-          git fetch origin main
-          git checkout -b "merge-back/$TICKET_NUMBER" origin/main
+          # Check if branch already exists
+          if git ls-remote --heads origin "$MERGE_BRANCH" | grep -q "$MERGE_BRANCH"; then
+            echo "Branch $MERGE_BRANCH already exists"
+            echo "branch_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "branch_exists=false" >> $GITHUB_OUTPUT
+            
+            # Create merge-back branch from main
+            git fetch origin main
+            git checkout -b "$MERGE_BRANCH" origin/main
 
-          # Cherry-pick commits from hotfix branch (excluding version bumps)
-          COMMITS=$(git log origin/main..origin/$HOTFIX_BRANCH \
-            --oneline \
-            --no-merges \
-            --invert-grep \
-            --grep="\[skip-ci\]" \
-            --format="%H" \
-            --reverse)
+            # Cherry-pick commits from hotfix branch (excluding version bumps)
+            COMMITS=$(git log origin/main..origin/$HOTFIX_BRANCH \
+              --oneline \
+              --no-merges \
+              --invert-grep \
+              --grep="\[skip.ci\]" \
+              --format="%H" \
+              --reverse)
 
-          for commit in $COMMITS; do
-            git cherry-pick $commit || {
-              echo "::error::Conflict detected during cherry-pick"
-              exit 1
-            }
-          done
+            for commit in $COMMITS; do
+              git cherry-pick $commit || {
+                echo "::error::Conflict detected during cherry-pick"
+                exit 1
+              }
+            done
 
-          # Push the merge-back branch
-          git push origin "merge-back/$TICKET_NUMBER"
+            # Push the merge-back branch
+            git push origin "$MERGE_BRANCH"
+          fi
 
-      - name: Create PR from temp to main
+      - name: Create or Update PR
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PAT }}
         run: |
           TICKET_NUMBER="${{ needs.build-and-release.outputs.version }}"
           HOTFIX_TAG="${{ needs.build-and-release.outputs.hotfix_tag }}"
+          MERGE_BRANCH="merge-back/$TICKET_NUMBER"
 
-          gh pr create \
-            --title "Merge Hotfix $HOTFIX_TAG into Main" \
-            --body "## Hotfix Merge Back
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head "$MERGE_BRANCH" --base main --json number --jq '.[0].number' || echo "")
 
-          This PR merges the hotfix changes back into main.
+          if [ -n "$EXISTING_PR" ]; then
+            echo "::notice::PR #$EXISTING_PR already exists for this branch"
+          else
+            gh pr create \
+              --title "Merge Hotfix $HOTFIX_TAG into Main" \
+              --body "## Hotfix Merge Back
 
-          **Hotfix Tag:** $HOTFIX_TAG
-          **Source Branch:** ${{ inputs.hotfix_branch }}
+            This PR merges the hotfix changes back into main.
 
-          Please review and merge to ensure main stays in sync with production hotfixes." \
-            --base main \
-            --head "merge-back/$TICKET_NUMBER"
+            **Hotfix Tag:** $HOTFIX_TAG
+            **Source Branch:** ${{ inputs.hotfix_branch }}
+
+            Please review and merge to ensure main stays in sync with production hotfixes." \
+              --base main \
+              --head "$MERGE_BRANCH"
+          fi

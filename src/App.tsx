@@ -23,7 +23,7 @@ function App() {
         </p>
       </div>
       <p className="read-the-docs">
-        Im tired grandpa, {count}, Can this work please
+        Im tired grandpa, {count}, finally work. I need this
       </p>
     </>
   )
