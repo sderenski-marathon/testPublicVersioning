@@ -174,7 +174,7 @@ jobs:
               --oneline \
               --no-merges \
               --invert-grep \
-              --grep="\[skip-ci\]" \
+              --grep="\[skip.ci\]" \
               --format="%H" \
               --reverse)
 
