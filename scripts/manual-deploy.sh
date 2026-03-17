@@ -129,6 +129,6 @@ echo ""
 read -p "Watch the latest run? (y/n):" WATCH
 echo ""
 
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-  gh run watch \$(gh run list --workflow=manually-deploy.yml --limit 1 --json databaseId --jq '.[0].databaseId') 
+if [[ $WATCH =~ ^[Yy]$ ]]; then
+  gh run watch $(gh run list --workflow=manually-deploy.yml --limit 1 --json databaseId --jq '.[0].databaseId') 
 fi
