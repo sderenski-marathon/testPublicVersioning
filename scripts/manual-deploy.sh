@@ -123,9 +123,10 @@ fi
 echo ""
 echo -e "${GREEN}Workflow triggered successfully${RESET}"
 echo ""
-read -p "Watch the latest run? (y/n):" WATCH
+read -p "Watch the latest run? (y/n):" -n 1 -r
 echo ""
 
-if [[ $WATCH =~ ^[Yy]$ ]]; then
-  gh run watch $(gh run list --workflow=manually-deploy.yml --limit 1 --json databaseId --jq '.[0].databaseId') 
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+  gh run watch $(gh run list --workflow=manual-deploy.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+  exit 0
 fi
