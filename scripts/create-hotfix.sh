@@ -52,9 +52,10 @@ gh workflow run hotfix_initiate.yml \
   -f ticket-number="$TICKET"
 
 echo ""
-read -p "Watch the latest run? (y/n):" WATCH
+read -p "Watch the latest run? (y/n):" -n 1 -r
 echo ""
 
-if [[ $WATCH =~ ^[Yy]$ ]]; then
-  gh run watch $(gh run list --workflow=manually-deploy.yml --limit 1 --json databaseId --jq '.[0].databaseId') 
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+  gh run watch $(gh run list --workflow=create-hotfix.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+  exit 0
 fi
