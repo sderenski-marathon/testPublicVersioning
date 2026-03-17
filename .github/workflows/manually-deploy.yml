@@ -3,6 +3,7 @@ name: Manually Deploy
 permissions:
   id-token: write
   contents: write
+  actions: write
 
 on:
   workflow_dispatch:

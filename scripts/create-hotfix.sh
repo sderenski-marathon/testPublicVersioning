@@ -51,4 +51,10 @@ gh workflow run hotfix_initiate.yml \
   -f prod-tag="$PROD_TAG" \
   -f ticket-number="$TICKET"
 
-echo "View workflow runs: gh run list --workflow=hotfix_initiate.yml"
+echo ""
+read -p "Watch the latest run? (y/n):" WATCH
+echo ""
+
+if [[ $WATCH =~ ^[Yy]$ ]]; then
+  gh run watch $(gh run list --workflow=manually-deploy.yml --limit 1 --json databaseId --jq '.[0].databaseId') 
+fi
