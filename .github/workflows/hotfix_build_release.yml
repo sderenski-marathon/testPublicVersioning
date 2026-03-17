@@ -76,7 +76,7 @@ jobs:
           echo "::notice::Hotfix version determined: $HOTFIX_TAG"
 
       - name: Delete Existing Release and Tag (Force Update)
-        if: inputs.force_update == true && steps.version.outputs.skip_release == true
+        if: inputs.force_update == true && steps.version.outputs.skip_release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
