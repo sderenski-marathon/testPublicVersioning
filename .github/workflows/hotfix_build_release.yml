@@ -27,6 +27,9 @@ jobs:
   build-and-release:
     needs: [ci]
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      hotfix_tag: ${{ steps.version.outputs.hotfix_tag }}
     permissions:
       contents: write
       actions: read
@@ -130,3 +133,69 @@ jobs:
             "build-${HOTFIX_TAG}.zip"
 
           echo "::notice::Created hotfix release: $HOTFIX_TAG"
+
+  merge-back:
+    needs: [build-and-release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.hotfix_branch }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create Temp Branch and Cherry-pick
+        id: merge-branch
+        run: |
+          TICKET_NUMBER="${{ needs.build-and-release.outputs.version }}"
+          HOTFIX_BRANCH="${{ inputs.hotfix_branch }}"
+
+          # Create merge-back branch from main
+          git fetch origin main
+          git checkout -b "merge-back/$TICKET_NUMBER" origin/main
+
+          # Cherry-pick commits from hotfix branch (excluding version bumps)
+          COMMITS=$(git log origin/main..origin/$HOTFIX_BRANCH \
+            --oneline \
+            --no-merges \
+            --invert-grep \
+            --grep="\[skip-ci\]" \
+            --format="%H" \
+            --reverse)
+
+          for commit in $COMMITS; do
+            git cherry-pick $commit || {
+              echo "::error::Conflict detected during cherry-pick"
+              exit 1
+            }
+          done
+
+          # Push the merge-back branch
+          git push origin "merge-back/$TICKET_NUMBER"
+
+      - name: Create PR from temp to main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TICKET_NUMBER="${{ needs.build-and-release.outputs.version }}"
+          HOTFIX_TAG="${{ needs.build-and-release.outputs.hotfix_tag }}"
+
+          gh pr create \
+            --title "Merge Hotfix $HOTFIX_TAG into Main" \
+            --body "## Hotfix Merge Back
+
+          This PR merges the hotfix changes back into main.
+
+          **Hotfix Tag:** $HOTFIX_TAG
+          **Source Branch:** ${{ inputs.hotfix_branch }}
+
+          Please review and merge to ensure main stays in sync with production hotfixes." \
+            --base main \
+            --head "merge-back/$TICKET_NUMBER"
