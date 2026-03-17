@@ -54,6 +54,8 @@ gh workflow run hotfix_initiate.yml \
 echo ""
 echo -e "${GREEN}Workflow triggered successfully${RESET}"
 echo ""
+read -t 0.1 -n 10000 discard 2>/dev/null || true
+
 read -p "Watch the latest run? (y/n): " -n 1 -r
 echo ""
 
