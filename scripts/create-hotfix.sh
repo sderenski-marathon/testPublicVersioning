@@ -52,10 +52,12 @@ gh workflow run hotfix_initiate.yml \
   -f ticket-number="$TICKET"
 
 echo ""
-read -p "Watch the latest run? (y/n):" -n 1 -r
+echo -e "${GREEN}Workflow triggered successfully${RESET}"
+echo ""
+read -p "Watch the latest run? (y/n): " -n 1 -r
 echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-  gh run watch $(gh run list --workflow=create-hotfix.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+  gh run watch $(gh run list --workflow=hotfix_initiate.yml --limit 1 --json databaseId --jq '.[0].databaseId')
   exit 0
 fi
