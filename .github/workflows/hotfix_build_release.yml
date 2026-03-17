@@ -179,7 +179,7 @@ jobs:
               --reverse)
 
             for commit in $COMMITS; do
-              git cherry-pick $commit || {
+              git cherry-pick --signoff $commit || {
                 echo "::error::Conflict detected during cherry-pick"
                 exit 1
               }
