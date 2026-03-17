@@ -141,6 +141,13 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_SECRET_KEY }}
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.hotfix_branch }}
@@ -182,7 +189,7 @@ jobs:
 
       - name: Create PR from temp to main
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           TICKET_NUMBER="${{ needs.build-and-release.outputs.version }}"
           HOTFIX_TAG="${{ needs.build-and-release.outputs.hotfix_tag }}"
